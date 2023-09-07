@@ -9,6 +9,8 @@ import { AppComponent } from './app.component';
 import { MainComponent } from './main/main.component';
 import { HeaderComponent } from './main/header/header.component';
 import { MapComponent } from './main/map/map.component';
+import { FeedComponent } from './main/feed/feed.component';
+import { MenuComponent } from './main/menu/menu.component';
 import { CreateRecordComponent } from './main/create-record/create-record.component';
 
 import { HttpService } from './shared/services/http.service';
@@ -23,6 +25,8 @@ import { GeoJsonPipe } from './shared/pipes/geojson.pipe';
     MainComponent,
     HeaderComponent,
     MapComponent,
+    FeedComponent,
+    MenuComponent,
     CreateRecordComponent,
     GeoJsonPipe,
   ],

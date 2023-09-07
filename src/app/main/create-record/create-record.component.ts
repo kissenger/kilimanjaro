@@ -5,6 +5,7 @@ import { MapService } from 'src/app/shared/services/map.service';
 import { Subscription } from 'rxjs';
 import { DataService } from 'src/app/shared/services/data.service';
 import * as mapboxgl from 'mapbox-gl';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-create-record',
@@ -21,7 +22,8 @@ export class CreateRecordComponent implements OnInit, OnDestroy {
   constructor(
     public map: MapService,
     public http: HttpService,
-    public data: DataService
+    public data: DataService,
+    public router: Router
   ) { }
 
   async ngOnInit() {
@@ -35,6 +37,13 @@ export class CreateRecordComponent implements OnInit, OnDestroy {
 
   }
 
+  onCancel() {
+    this.router.navigate(['/map']);
+  }
+
+  onSave() {
+    this.router.navigate(['/map']);
+  }
 
   ngOnDestroy() {
     if (this.mapUpdateSubscription) { this.mapUpdateSubscription.unsubscribe(); }

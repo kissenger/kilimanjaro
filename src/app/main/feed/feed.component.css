@@ -5,16 +5,13 @@
   bottom: 0px;
   left: 0px;
   right: 0px;
-  border: 1px red solid;
+  /* border: 1px red solid; */
   border-radius: 0px;
 }
 
 #menu {
   position: absolute;
-  /* background: #ffffff; */
+  background: #efefef;
   padding: 10px;
   font-family: 'Open Sans', sans-serif;
-  z-index: 100000;
 }
-
-

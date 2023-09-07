@@ -53,7 +53,10 @@ export class MapService {
 
       let mapCentre: TsCoordinate;
       let mapZoom: number;
-      const nav = new mapboxgl.NavigationControl();
+      const nav = new mapboxgl.NavigationControl({
+        visualizePitch: false,
+        showCompass: false
+      });
 
       if ( startPosition ) {
         // if location is provided, use that (zoom not needed as map will resize when path is added)
@@ -82,7 +85,7 @@ export class MapService {
           center: mapCentre,
           zoom: mapZoom
         });
-        this.tsMap.addControl(nav, 'top-left');
+        this.tsMap.addControl(nav, 'bottom-left');
         this.tsMap.doubleClickZoom.disable();
 
         this.tsMap.on('render', (event) => {
