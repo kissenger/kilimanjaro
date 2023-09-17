@@ -1,104 +1,65 @@
 
-
-/**
- * Map display options
- */
-
-// import { StringMap } from "@angular/compiler/src/compiler_facade_interface";
-
-export interface TsLineStyle {
-    lineWidth?: number;
-    lineColour?: string;
-    lineOpacity?: number;
+export type TsGeoPoint = {
+  type: 'Point';
+  coordinates: [number, number];
 }
 
-export interface TsMapView {
-  centre: TsCoordinate;
-  zoom: number;
-}
-export type TsMapType = 'terrain' | 'satellite';
-
-export interface TsCoordinate {
-  lat: number;
-  lng: number;
+export type TsFeature = {
+  id?: string;
+  type: 'Feature';
+  geometry: TsGeoPoint;
+  properties: TsProperties;
 }
 
-/**
- * User details
- */
-export interface TsUser {
-  userName: string;
-  homeLngLat?: TsCoordinate;
-  isHomeLocSet?: boolean;
-  email: string;
-  password?: string;
-  _id?: string;
-}
-
-/**
- * GeoJSON Definition
- * Largely stolen from here: ...\node_modules\@types\geojson\index.d.ts
- * But adapted to ensure we get geoJSON formed in the correct manner from the back-end
- * Also see spec: https://tools.ietf.org/html/rfc7946
- */
-
- export type TsFeatureCollection = TsFeatureColl | undefined;
-
- export interface TsFeatureColl {
+export type TsFeatureCollection = {
   type: 'FeatureCollection';
   features: TsFeature[];
-  // bbox?: TsBoundingBox;
+  bbox?: TsBoundingBox;
 }
 
-export interface TsFeature {
-  // bbox?: TsBoundingBox;
-  id?: string; // mapbox
-  type: 'Feature';
-  geometry: TsGeometry;
-  properties: TsProperties | null;
-}
-
-// TsPosition provides a position as array of numbers in format [lng, lat]
-export type TsPosition = number[];
-
-export type TsGeometry = TsPoint | TsLineString | TsPolygon;
-
-// TsPoint defines a point in geoJSON format
-export interface TsPoint{
-  type: 'Point';
-  coordinates: TsPosition;
-}
-
-// TsLineString defines a line in geoJSON format
-export interface TsLineString {
-  type: 'LineString';
-  coordinates: TsPosition[];
-}
-
-// TsLineString defines a line in geoJSON format
-export interface TsPolygon{
-  type: 'Polygon';
-  coordinates: TsPosition[];
-}
-
-// TsBoundingBox provides a boundingbox array in the form [minLng, minLat, maxLng, maxLng]
-export type TsBoundingBox = [number, number, number, number];
 
 
+export type TsCoordinate = [number, number];
+export type TsLngLat = {lat: number, lng: number};
+export type TsBoundingBox = [number, number, number, number] | undefined;
 
-
-
-export interface TsProperties {
-  mongoId: string,
-  polygonName: string,
-  status: [TsPolygonStatus]
-}
-
-export interface TsPolygonStatus {
+export type TsVizProps = {
+  siteId: string;
+  visibility: number,
   timestamp: Date,
+  comments: string,
+  userName: string,
+  userId: string
+}
+
+export type TsSiteType = 'wreck' | 'reef';
+
+export type TsSiteProps = {
+  siteName: string,
+  siteType: TsSiteType,
+  siteDescription: string,
+  userName: string,
+  userId: string,
+  status: [TsStatus]
+}
+
+export type TsStatus = {
+  visibility?: number,
+  vizDate?: Date,
   userId: string,
   userName: string,
-  status: string,
-  displayColour: string,
+  comments: string
 }
+
+export type TsProperties = TsSiteProps;
+
+export type TsMapView = {
+  centre: TsLngLat,
+  zoom: number,
+  bounds: TsBoundingBox
+}
+
+
+
+
 

@@ -2,35 +2,34 @@
   // For more information, visit: https://go.microsoft.com/fwlink/?LinkId=733558
   "version": "2.0.0",
   "tasks": [
-
-      {
-        "label": "Serve front and back",
-        "dependsOn": [
-          "Serve front",
-          "Serve back"
-        ],
-        "problemMatcher": []
-      },
-      {
-        "label": "Serve front",
-        "type": "shell",
-        "command": "cd D:\\Files\\Coding\\Angular\\kilimanjaro && ng serve",
-        "presentation": {
-          "group": "split terminal",
-          "reveal": "always",
-          "panel": "new"
-        }
-      },
-      {
-        "label": "Serve back",
-        "type": "shell",
-        "command": "cd D:\\Files\\Coding\\Angular\\kilimanjaro\\nodejs && npm run server",
-        "presentation": {
-          "group": "split terminal",
-          "reveal": "always",
-          "panel": "new"
-        },
-      },
+    {
+      "label": "Serve front and back",
+      "dependsOn": [
+        "Serve front",
+        "Serve back"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Serve front",
+      "type": "shell",
+      "command": "cd D:\\Files\\Coding\\Angular\\kilimanjaro && ng serve",
+      "presentation": {
+        "group": "split terminal",
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "Serve back",
+      "type": "shell",
+      "command": "cd D:\\Files\\Coding\\Angular\\kilimanjaro\\nodejs && npm run server",
+      "presentation": {
+        "group": "split terminal",
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
     {
       "type": "npm",
       "script": "start",

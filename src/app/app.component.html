@@ -1,7 +1,23 @@
 
 <div class="d-flex flex-column vh-100">
-  <app-header></app-header>
-  <div class="h-100">
-    <router-outlet> </router-outlet>
+
+  <app-header class="mx-3"></app-header>
+
+  <div class="h-100 d-flex flex-row mx-3">
+
+      <!-- <app-map class="flex-grow-1 mx-3"></app-map>
+
+      <div class="middle-panel-width">
+      <router-outlet></router-outlet>
+      </div> -->
+      <div class="flex-grow-1 border">
+        <router-outlet> </router-outlet>
+      </div>
+
+    <div class="ads-panel-width border">
+      ads panel
+    </div>
+
   </div>
 </div>
+

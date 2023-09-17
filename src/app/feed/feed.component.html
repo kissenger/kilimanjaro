@@ -1,0 +1,36 @@
+
+
+
+<div class="flex-row d-flex h-100 w-100">
+
+  <app-map class="h-100 flex-grow-1"></app-map>
+
+  <div class="h-100 mx-3 middle-panel-width">
+    <form>
+      <div class="row no-gutters">
+
+
+        <div class="col-12 m-0 p-0">
+          <select [(ngModel)]="listSort" name="sort"
+            (ngModelChange)="onChangeSortType()" class="form-select form-select-sm my-1 pl-2 w-100">
+            <option value='{"sort": "a-z", "direction" : "1"}'>  A - Z</option>
+            <option value='{"sort": "a-z", "direction" : "-1"}'> Z - A</option>
+            <option value='{"sort": "date", "direction" : "-1"}'> Recently updated</option>
+            <option value='{"sort": "date", "direction" : "1"}'>  Oldest first</option>
+            <option value='{"sort": "viz", "direction" : "-1"}'> Best Visibility</option>
+            <option value='{"sort": "viz", "direction" : "1"}'>  Worst Visibility</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row no-gutters">
+        <div class="col-12 mb-1 p-0">
+          <input [(ngModel)]="searchText" (ngModelChange)="onSubmitTextSearch()" autocomplete="off"
+            name="search" class="form-control form-control-sm" placeholder="Search terms (username, activity type...)">
+        </div>
+      </div>
+
+    </form>
+    <app-list-item *ngFor="let item of list" [item]="item"></app-list-item>
+  </div>
+</div>

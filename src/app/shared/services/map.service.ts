@@ -1,15 +1,14 @@
-import { TsPosition } from './../interfaces';
+import { TsBoundingBox, TsCoordinate, TsFeatureCollection, TsLngLat, TsMapView } from './../interfaces';
 
 
 import * as globals from 'src/app/shared/globals';
 import { HttpService } from './http.service';
 import { Injectable, Pipe } from '@angular/core';
 import * as mapboxgl from 'mapbox-gl';
-import { TsCoordinate, TsFeature, TsBoundingBox, TsMapType, TsProperties } from 'src/app/shared/interfaces';
 import { environment } from 'src/environments/environment';
 // import * as MapboxDraw from "@mapbox/mapbox-gl-draw";
 import { DataService } from './data.service';
-import { ActiveLayers } from 'src/app/shared/classes/layers';
+import { TsMarkers } from '../classes/ts-markers';
 
 @Injectable({
   providedIn: 'root'
@@ -23,17 +22,18 @@ export class MapService {
     satellite: environment.MAPBOX_STYLE_SATELLITE
   };
   public isDev = !environment.production;
-  public layers = new ActiveLayers();
-  private clickPosition: mapboxgl.LngLat | undefined;
+  public markers = new TsMarkers();
+
+
+  // private clickPosition: mapboxgl.LngLat | undefined;
 
   public tsMap!: mapboxgl.Map;
-  private mapDefaultType: TsMapType = 'terrain';
-  private padding = {
-    wideScreen: {top: 50, left: 50, bottom: 50, right: 300},
-    narrowScreen: {top: 10, left: 10, bottom: 10, right: 10}
-  };
-  private clickedFeature = null;
-  private hoveredFeature = null;
+  // private padding = {
+  //   wideScreen: {top: 50, left: 50, bottom: 50, right: 300},
+  //   narrowScreen: {top: 10, left: 10, bottom: 10, right: 10}
+  // };
+  // private clickedFeature = null;
+  // private hoveredFeature = null;
   public mouseoverPopup: mapboxgl.Popup | undefined;
 
 
@@ -46,31 +46,16 @@ export class MapService {
 
 
 
-  newMap(startPosition?: TsCoordinate, startZoom?: number, boundingBox?: TsBoundingBox) {
+  // newMap(startPosition?: TsCoordinate, startZoom?: number, boundingBox?: TsBoundingBox) {
+  newMap(mapView = globals.defaultMapView) {
 
     // setting the center and zoom here prevents flying animation - zoom gets over-ridden when the map bounds are set below
     return new Promise<mapboxgl.Map>( (resolve, reject) => {
 
-      let mapCentre: TsCoordinate;
-      let mapZoom: number;
       const nav = new mapboxgl.NavigationControl({
         visualizePitch: false,
         showCompass: false
       });
-
-      if ( startPosition ) {
-        // if location is provided, use that (zoom not needed as map will resize when path is added)
-        mapCentre = startPosition;
-        mapZoom = startZoom ? startZoom : globals.defaultMapView.zoom;
-
-      } else {
-        // otherwise fall back to default values
-        mapCentre = globals.defaultMapView.centre;
-        mapZoom = globals.defaultMapView.zoom;
-
-      }
-
-
 
       if (!mapboxgl.supported()) {
 
@@ -80,44 +65,54 @@ export class MapService {
 
         this.tsMap = new mapboxgl.Map({
           container: 'map',
-          style: this.mapboxStyles[this.mapDefaultType],
+          style: this.mapboxStyles['terrain'],
           accessToken: this.mapboxToken,
-          center: mapCentre,
-          zoom: mapZoom
+          center: mapView.centre,
+          zoom: mapView.zoom
         });
+
         this.tsMap.addControl(nav, 'bottom-left');
         this.tsMap.doubleClickZoom.disable();
 
         this.tsMap.on('render', (event) => {
-          this.data.mapPositionEmitter.emit({
-            bounds: this.getMapBounds(),
-            centre: this.getMapCentre()
-          });
-          this.clickedFeature = null;
+
+          this.data.mapView.save = this.getMapView();
+          this.data.mapPositionEmitter.emit('render');
+          // this.clickedFeature = null;
         });
+
+        this.tsMap.on('moveend', (event) => {
+          this.data.mapView.save = this.getMapView();
+          this.data.mapPositionEmitter.emit('moveend');
+          console.log(this.data.mapView.get)
+        })
+
       }
 
-      this.tsMap.on('contextmenu', this.onRightClick);
+      // this.tsMap.on('contextmenu', this.onRightClick);
 
       this.tsMap.once('load', () => {
+        this.data.mapView.save = this.getMapView();
+        this.data.mapPositionEmitter.emit('moveend');
         resolve(this.tsMap);
-        this.data.mapPositionEmitter.emit({
-          bounds: this.getMapBounds(),
-          centre: this.getMapCentre()
-        });
       });
 
     });
 
   }
 
-  public getMapBounds() {
-    const mapBounds = this.tsMap.getBounds();
-    return<TsBoundingBox> [mapBounds.getSouthWest().lng, mapBounds.getSouthWest().lat, mapBounds.getNorthEast().lng, mapBounds.getNorthEast().lat];
+
+  private getMapView(): TsMapView {
+    return {
+      zoom: this.tsMap.getZoom(),
+      centre: this.tsMap.getCenter(),
+      bounds: this.getMapBounds()
+    }
   }
 
-  public getMapCentre() {
-    return<mapboxgl.LngLat> this.tsMap.getCenter();
+  private getMapBounds(): TsBoundingBox{
+    const mapBounds = this.tsMap.getBounds();
+    return [mapBounds.getSouthWest().lng, mapBounds.getSouthWest().lat, mapBounds.getNorthEast().lng, mapBounds.getNorthEast().lat];
   }
 
   public onRightClick = (e: mapboxgl.MapLayerMouseEvent | mapboxgl.MapLayerTouchEvent) => {
@@ -134,4 +129,22 @@ export class MapService {
       .addTo(this.tsMap);
   }
 
+  public addPoint(point: TsCoordinate, pointId: string) {
+    this.markers.add(pointId, point, this.tsMap);
+  }
+
+  public deletePoints() {
+    this.markers.deleteAll();
+  }
+
+  public goto(point: TsLngLat | TsCoordinate) {
+    if ( 'lng' in point) {
+      this.tsMap.flyTo({center: point});
+    } else {
+      this.tsMap.flyTo({
+        center: {lng: point[0], lat: point[1]},
+        zoom: globals.zoomedInZoom
+      });
+    }
+  }
 }

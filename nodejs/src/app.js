@@ -9,8 +9,9 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-const VizDB = require('./schema/data-model').DataRecord;
+const Sites = require('./schema/site-model').SiteRecord;
 const dotenv = require('dotenv').config();
+
 
 if (dotenv.error) {
   console.log(`ERROR from app.js: ${dotenv.error}`);
@@ -20,7 +21,6 @@ if (dotenv.error) {
 const app = express();
 
 // apply middleware - note setheaders must come first
-// TODO:  (2) to inject /api on routes
 app.use( (req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin","*");
   res.setHeader("Access-Control-Allow-Headers","Origin, X-Request-With, Content-Type, Accept, Authorization, Content-Disposition");
@@ -35,7 +35,6 @@ app.use((req, res, next) => {
 
 
 // mongo as a service
-// console.log(process.env.MONGODB_PASSWORD)
 mongoose.connect(`mongodb+srv://root:${process.env.MONGODB_PASSWORD}@cluster0-5h6di.gcp.mongodb.net/kilimanjaro?retryWrites=true&w=majority`,
   {useUnifiedTopology: true, useNewUrlParser: true });
 
@@ -44,26 +43,85 @@ mongoose.connection
   .on('close', () => console.log('MongoDB disconnected'))
   .once('open', () => console.log('MongoDB connected') );
 
-app.get('/api/ping/', async (req, res) => {
+app.get('/ping', async (req, res) => {
   res.status(201).json({"hello": "world"});
 })
 
-/*****************************************************************
- * store new record to database
- ******************************************************************/
-app.post('/api/create-new-record/', async (req, res) => {
-
+app.post('/api/save-record', async (req, res) => {
   const data = req.body;
+  console.log(data);
 
   try {
-    const doc = await DataRecord.create(data);
-    res.status(200).json(doc);
-  } catch (error) {
-    res.status(500).json({myMessage: 'Error saving record - Unknown error'});
+    const doc = await Sites.create(data);
+    res.status(200).json({status: 200});
+  } catch(error) {
+    res.status(500).json({status: 600, error});
   }
 
 });
 
+
+app.get('/api/get-sites/:offset/:limit/:sort/:direction/:searchText',  async (req, res) => {
+
+  const box = { type: 'Polygon', coordinates: bbox2Polygon(req.query.bbox) };
+  let query = { geometry: { $geoIntersects: { $geometry: box} } };
+  if (req.params.searchText !== ' ') {
+    const searchString = '\"' + req.params.searchText.split(' ').join('\" \"') + '\"'
+    query= {$and: [query, { $text: {$search: searchString, $caseSensitive: false} }]};
+  }
+
+  const docs = await Sites.aggregate([
+    { $match: query },
+    { $addFields: {
+      lastStatus: {
+        $arrayElemAt: ["$properties.status", -1]
+        }
+      },
+    },
+    { $project:
+      {
+        "lowerCaseName": {
+          $toLower: "$properties.siteName"
+        },
+        // creationDate: 1,
+        // name: "$properties.siteName",
+        properties: 1,
+
+        geometry: 1
+        // siteId: "$_id"
+      },
+    },
+    sort(req.params.sort, req.params.direction),
+    { $facet: {
+        count: [{ $count: "count" }],
+        list: [
+          { $skip: req.params.limit * req.params.offset },
+          { $limit: req.params.limit * 1 }
+        ] } }
+  ]);
+
+  let count;
+  try {
+    count = docs[0].count[0].count;
+  } catch {
+    count = 0;
+  }
+
+  res.status(201).json( {list: docs[0].list, count} );
+
+  function sort(sortType, sortDirection) {
+    switch(sortType) {
+      case 'a-z':
+        return { $sort: { "lowerCaseName": sortDirection * 1 } };
+      case 'viz':
+        return { $sort: { "lastStatus.visibility": sortDirection * 1 } };
+      case 'date':
+        return { $sort: { "lastStatus.creationDate": sortDirection * 1 } };
+      default:
+        return new Error('Invalid sort condition');
+  }
+}
+})
 
 app.post('/api/update-status/', async (req, res) => {
 
@@ -72,41 +130,12 @@ app.post('/api/update-status/', async (req, res) => {
   console.log(id)
   console.log(newStatus)
 
-  const result = await PolygonDB.updateOne( { _id: id }, { $push: { 'properties.status': newStatus}});
+  const result = await Sites.updateOne( { _id: id }, { $push: { 'properties.status': newStatus}});
   console.log(result);
   res.status(201).json(result);
 
 })
 
-
-
-app.get('/api/get-polygons-in-bbox', async (req, res) => {
-
-  const box = { type: 'Polygon', coordinates: bbox2Polygon(req.query.bbox) };
-
-  try {
-    //resturn docs using sort to ensure same order providing bbox hasnt changed
-    const docs = await PolygonDB.find( { geometry: { $geoIntersects: { $geometry: box} } }).sort({_id: 'asc'});
-    res.status(200).json(docs2Geojsons(docs));
-  } catch (error) {
-    console.log(error);
-    res.status(500).send(error.message);
-  }
-});
-
-// take the returned document array and return a geojson in the format required for the front-end
-// 1) add a unique id *number* (so cannot use _id) at root level for mapbox featurestate
-// 2) add the _id as mongoId under properties to ensure that id doesnt get stripped out when featurestate is returned
-function docs2Geojsons(docsArr) {
-  return docsArr.map( (d, i) => ({
-    geometry: d._doc.geometry,
-    properties: {
-      ...d._doc.properties,
-      mongoId: d._doc._id
-    },
-    id: i
-  }))
-}
 
 
 function bbox2Polygon(bbox) {
@@ -128,7 +157,6 @@ function bbox2Polygon(bbox) {
   ]]
 }
 
-// factors bbox to with shrink (factor < 1) or grow (factor > 1) box
 function scaleBox(bbox, factor) {
 
   const minLat = bbox[1];
@@ -149,10 +177,8 @@ function scaleBox(bbox, factor) {
     maxLat < 0 ? maxLat + latShift : maxLat - latShift
   ]
 
-
 }
 
-// caps lat/lng to ensure no values out of range
 function checkBoxBounds(bbox) {
   const minLng = bbox[0] < -180 ? -180 : bbox[0] > 180 ? 180 : bbox[0];
   const minLat = bbox[1] < -90  ? -90  : bbox[1] > 90  ? 90  : bbox[1];
@@ -161,11 +187,11 @@ function checkBoxBounds(bbox) {
   return [minLng, minLat, maxLng, maxLat];
 }
 
-// limit value (number) to n decimal places in precision
 function limitPrecision(value, precision) {
   let multiplier = Math.pow(10, precision);
   return Math.round( value * multiplier ) / multiplier;
 }
+
 
 module.exports = app;
 
